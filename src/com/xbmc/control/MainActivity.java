@@ -19,6 +19,7 @@ import android.content.Intent;
 import android.content.Context;
 import android.content.pm.ApplicationInfo;
 import android.webkit.CookieManager;
+import android.webkit.CookieSyncManager;
 import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
@@ -64,7 +65,13 @@ public class MainActivity extends Activity {
 	@SuppressLint("NewApi")
 	protected void onCreate(Bundle savedInstanceState) {
 		
+		final Activity activity = this;
 		super.onCreate(savedInstanceState);
+		
+		CookieSyncManager.createInstance(activity);
+		CookieSyncManager.getInstance().startSync();
+		CookieManager.getInstance().setAcceptCookie(true);
+		CookieManager.getInstance().removeExpiredCookie();
 		
 		getWindow().requestFeature(Window.FEATURE_NO_TITLE);
 		if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) { // check if API of device is that of KitKat (19)
@@ -73,12 +80,7 @@ public class MainActivity extends Activity {
 		}
 		}
 		
-		
 		getWindow().requestFeature(Window.FEATURE_PROGRESS);
-		
-		CookieManager.getInstance().setAcceptCookie(true); 
-		final Activity activity = this;
-
 		setContentView(R.layout.activity_main);
 		
 		WebView webview = new WebView(this);      
@@ -91,8 +93,8 @@ public class MainActivity extends Activity {
 		webSettings.setLoadWithOverviewMode(true);
 		webSettings.setUseWideViewPort(true);
 		webSettings.setSupportMultipleWindows(true);
-		//webview.setHorizontalScrollBarEnabled(false);
-		//webview.setScrollBarStyle(WebView.SCROLLBARS_OUTSIDE_OVERLAY);
+		webview.setHorizontalScrollBarEnabled(false);
+		webview.setScrollBarStyle(WebView.SCROLLBARS_OUTSIDE_OVERLAY);
 		
 		webview.addJavascriptInterface(this, "android");
 		
@@ -100,38 +102,37 @@ public class MainActivity extends Activity {
 			webSettings.setAllowUniversalAccessFromFileURLs(true);
 			webSettings.setAllowFileAccessFromFileURLs(true);
 	    }
-//		webview.setWebViewClient(new WebViewClient() {  
-//		      @Override  
-//		      public boolean shouldOverrideUrlLoading(WebView view, String url)  
-//		      {  
-//		        view.loadUrl(url);  
-//		        return true;  
-//		      }  
-//		    }); 
-//		webview.setWebChromeClient(new WebChromeClient() {
-//			  public void onConsoleMessage(String message, int lineNumber, String sourceID) {
-//			    Log.d("MyApplication", message + " -- From line "
-//			                         + lineNumber + " of "
-//			                         + sourceID);
-//			  }
-//			});
-//		webview.setWebChromeClient(new WebChromeClient() {
-//			   public void onProgressChanged(WebView view, int progress) {
-//			     // Activities and WebViews measure progress with different scales.
-//			     // The progress meter will automatically disappear when we reach 100%
-//			     activity.setProgress(progress * 1000);
-//			   }
-//			 });
-//		webview.setWebViewClient(new WebViewClient() {
-//			   public void onReceivedError(WebView view, int errorCode, String description, String failingUrl) {
-//			     Toast.makeText(activity, "Oh no! " + description, Toast.LENGTH_SHORT).show();
-//			   }
-//			 });
+		
+		webview.setWebChromeClient(new WebChromeClient() {
+			  public void onConsoleMessage(String message, int lineNumber, String sourceID) {
+			    Log.d("MyApplication", message + " -- From line "
+			                         + lineNumber + " of "
+			                         + sourceID);
+			  }
+
+			   public void onProgressChanged(WebView view, int progress) {
+			     // Activities and WebViews measure progress with different scales.
+			     // The progress meter will automatically disappear when we reach 100%
+			     activity.setProgress(progress * 1000);
+			   }
+			 });
+		
+		webview.setWebViewClient(new WebViewClient() {  
+		      @Override  
+		      public boolean shouldOverrideUrlLoading(WebView view, String url)  
+		      {  
+		        view.loadUrl(url);  
+		        return true;  
+		      }  
+		   
+			   public void onReceivedError(WebView view, int errorCode, String description, String failingUrl) {
+			     Toast.makeText(activity, "Oh no! " + description, Toast.LENGTH_SHORT).show();
+			   }
+			 });
 		
 		  setContentView(webview); 
 		  
 		  webview.loadUrl("http://henifezzeni.hd.free.fr:8080/Remote/index.php");
-		  //webview.loadUrl("http://demos.jquerymobile.com/1.2.0-beta.1/docs/pages/popup/");
 	}
 
 	@Override
