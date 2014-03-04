@@ -12,6 +12,8 @@ import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.Window;
+import android.view.WindowManager;
+import android.view.WindowManager.LayoutParams;
 import android.widget.Button;
 import android.widget.Toast;
 import android.view.View.OnClickListener;
@@ -24,6 +26,7 @@ import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+
 /**
  * An example full-screen activity that shows and hides the system UI (i.e.
  * status bar and navigation/system bar) with user interaction.
@@ -58,32 +61,34 @@ public class MainActivity extends Activity {
 	 * The instance of the {@link SystemUiHider} for this activity.
 	 */
 	private SystemUiHider mSystemUiHider;
-	
+
 	private WebView mWebView;
 
 	@Override
 	@SuppressLint("NewApi")
 	protected void onCreate(Bundle savedInstanceState) {
-		
+
 		final Activity activity = this;
 		super.onCreate(savedInstanceState);
-		
 		CookieSyncManager.createInstance(activity);
 		CookieSyncManager.getInstance().startSync();
 		CookieManager.getInstance().setAcceptCookie(true);
 		CookieManager.getInstance().removeExpiredCookie();
-		
-		getWindow().requestFeature(Window.FEATURE_NO_TITLE);
-		if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) { // check if API of device is that of KitKat (19)
-		if ( 0 != ( getApplicationInfo().flags &= ApplicationInfo.FLAG_DEBUGGABLE ) ) { // check if app is set to debugging
-		WebView.setWebContentsDebuggingEnabled(true); // set debugging with Chrome to true
-		}
-		}
-		
-		getWindow().requestFeature(Window.FEATURE_PROGRESS);
+		Window w = activity.getWindow();
+		w.requestFeature(Window.FEATURE_NO_TITLE);
+		w.addFlags(LayoutParams.FLAG_KEEP_SCREEN_ON);
+		// in Activity's onCreate() for instance
+		w.addFlags(WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN);
+		// w.requestFeature(Window.FEATURE_PROGRESS);
 		setContentView(R.layout.activity_main);
-		
-		WebView webview = new WebView(this);      
+
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+			if (0 != (getApplicationInfo().flags &= ApplicationInfo.FLAG_DEBUGGABLE)) { 
+				WebView.setWebContentsDebuggingEnabled(true); 
+			}
+		}
+
+		WebView webview = new WebView(this);
 		WebSettings webSettings = webview.getSettings();
 		webSettings.setJavaScriptEnabled(true);
 		webSettings.setAllowContentAccess(true);
@@ -92,47 +97,50 @@ public class MainActivity extends Activity {
 		webSettings.setDomStorageEnabled(true);
 		webSettings.setLoadWithOverviewMode(true);
 		webSettings.setUseWideViewPort(true);
-		webSettings.setSupportMultipleWindows(true);
+		// webSettings.setSupportMultipleWindows(true);
 		webview.setHorizontalScrollBarEnabled(false);
 		webview.setScrollBarStyle(WebView.SCROLLBARS_OUTSIDE_OVERLAY);
-		
+
 		webview.addJavascriptInterface(this, "android");
-		
-		if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN){
+
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
 			webSettings.setAllowUniversalAccessFromFileURLs(true);
 			webSettings.setAllowFileAccessFromFileURLs(true);
-	    }
-		
-		webview.setWebChromeClient(new WebChromeClient() {
-			  public void onConsoleMessage(String message, int lineNumber, String sourceID) {
-			    Log.d("MyApplication", message + " -- From line "
-			                         + lineNumber + " of "
-			                         + sourceID);
-			  }
+		}
 
-			   public void onProgressChanged(WebView view, int progress) {
-			     // Activities and WebViews measure progress with different scales.
-			     // The progress meter will automatically disappear when we reach 100%
-			     activity.setProgress(progress * 1000);
-			   }
-			 });
-		
-		webview.setWebViewClient(new WebViewClient() {  
-		      @Override  
-		      public boolean shouldOverrideUrlLoading(WebView view, String url)  
-		      {  
-		        view.loadUrl(url);  
-		        return true;  
-		      }  
-		   
-			   public void onReceivedError(WebView view, int errorCode, String description, String failingUrl) {
-			     Toast.makeText(activity, "Oh no! " + description, Toast.LENGTH_SHORT).show();
-			   }
-			 });
-		
-		  setContentView(webview); 
-		  
-		  webview.loadUrl("http://henifezzeni.hd.free.fr:8080/Remote/index.php");
+		webview.setWebChromeClient(new WebChromeClient() {
+			public void onConsoleMessage(String message, int lineNumber,
+					String sourceID) {
+				Log.d("MyApplication", message + " -- From line " + lineNumber
+						+ " of " + sourceID);
+			}
+
+			public void onProgressChanged(WebView view, int progress) {
+				// Activities and WebViews measure progress with different
+				// scales.
+				// The progress meter will automatically disappear when we reach
+				// 100%
+				activity.setProgress(progress * 1000);
+			}
+		});
+
+		webview.setWebViewClient(new WebViewClient() {
+			@Override
+			public boolean shouldOverrideUrlLoading(WebView view, String url) {
+				view.loadUrl(url);
+				return true;
+			}
+
+			public void onReceivedError(WebView view, int errorCode,
+					String description, String failingUrl) {
+				Toast.makeText(activity, "Oh no! " + description,
+						Toast.LENGTH_SHORT).show();
+			}
+		});
+
+		setContentView(webview);
+
+		webview.loadUrl("http://henifezzeni.hd.free.fr:8080/Remote/index.php");
 	}
 
 	@Override
@@ -164,7 +172,7 @@ public class MainActivity extends Activity {
 	Runnable mHideRunnable = new Runnable() {
 		@Override
 		public void run() {
-		//	mSystemUiHider.hide();
+			// mSystemUiHider.hide();
 		}
 	};
 
