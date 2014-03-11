@@ -1,9 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources>
+<resources xmlns:android="http://schemas.android.com/apk/res/android">
 
     <string name="app_name">Control</string>
     <string name="dummy_button">Dummy Button</string>
+    <string name="splashscreen_desc">Splash Screen</string>
     <string name="dummy_content">DUMMY\nCONTENT</string>
     <string name="title_activity_web_view">WebViewActivity</string>
-
+    <string name="dialog_title_no_connection">No connection problem</string>
+    <string name="dialog_body_no_connection">No connection found!!! please your connectivity.</string>
+    
+   
 </resources>

@@ -1,10 +1,18 @@
 package com.xbmc.control;
 
+import java.io.IOException;
+
+import com.xbmc.control.util.ControlWebViewClient;
+import com.xbmc.control.util.JsInterface;
 import com.xbmc.control.util.SystemUiHider;
 
 import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.app.Activity;
+import android.app.AlertDialog;
+import android.media.MediaPlayer;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -76,15 +84,15 @@ public class MainActivity extends Activity {
 		CookieManager.getInstance().removeExpiredCookie();
 		Window w = activity.getWindow();
 		w.requestFeature(Window.FEATURE_NO_TITLE);
-		w.addFlags(LayoutParams.FLAG_KEEP_SCREEN_ON);
+		// w.addFlags(LayoutParams.FLAG_KEEP_SCREEN_ON);
 		// in Activity's onCreate() for instance
 		w.addFlags(WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN);
 		// w.requestFeature(Window.FEATURE_PROGRESS);
 		setContentView(R.layout.activity_main);
 
 		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-			if (0 != (getApplicationInfo().flags &= ApplicationInfo.FLAG_DEBUGGABLE)) { 
-				WebView.setWebContentsDebuggingEnabled(true); 
+			if (0 != (getApplicationInfo().flags &= ApplicationInfo.FLAG_DEBUGGABLE)) {
+				WebView.setWebContentsDebuggingEnabled(true);
 			}
 		}
 
@@ -92,16 +100,17 @@ public class MainActivity extends Activity {
 		WebSettings webSettings = webview.getSettings();
 		webSettings.setJavaScriptEnabled(true);
 		webSettings.setAllowContentAccess(true);
-		webSettings.setJavaScriptCanOpenWindowsAutomatically(true);
-
+		webSettings.setJavaScriptCanOpenWindowsAutomatically(false);
+		webSettings.setAllowFileAccess(true);
 		webSettings.setDomStorageEnabled(true);
 		webSettings.setLoadWithOverviewMode(true);
 		webSettings.setUseWideViewPort(true);
+		webSettings.setCacheMode(WebSettings.LOAD_NO_CACHE);
 		// webSettings.setSupportMultipleWindows(true);
 		webview.setHorizontalScrollBarEnabled(false);
 		webview.setScrollBarStyle(WebView.SCROLLBARS_OUTSIDE_OVERLAY);
 
-		webview.addJavascriptInterface(this, "android");
+		webview.addJavascriptInterface(new JsInterface(), "android");
 
 		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
 			webSettings.setAllowUniversalAccessFromFileURLs(true);
@@ -116,31 +125,33 @@ public class MainActivity extends Activity {
 			}
 
 			public void onProgressChanged(WebView view, int progress) {
+				activity.setTitle("Loading...");
 				// Activities and WebViews measure progress with different
 				// scales.
 				// The progress meter will automatically disappear when we reach
 				// 100%
 				activity.setProgress(progress * 1000);
+				if (progress == 100)
+					activity.setTitle(R.string.app_name);
 			}
 		});
 
-		webview.setWebViewClient(new WebViewClient() {
-			@Override
-			public boolean shouldOverrideUrlLoading(WebView view, String url) {
-				view.loadUrl(url);
-				return true;
-			}
-
-			public void onReceivedError(WebView view, int errorCode,
-					String description, String failingUrl) {
-				Toast.makeText(activity, "Oh no! " + description,
-						Toast.LENGTH_SHORT).show();
-			}
-		});
+		webview.setWebViewClient(new ControlWebViewClient(this));
 
 		setContentView(webview);
+		if (isOnline())
+			webview.loadUrl("http://henifezzeni.hd.free.fr:8080/Remote/index.php");
+		else
+		{
+			AlertDialog.Builder builder = new AlertDialog.Builder(this);
 
-		webview.loadUrl("http://henifezzeni.hd.free.fr:8080/Remote/index.php");
+			// 2. Chain together various setter methods to set the dialog characteristics
+			builder.setMessage(R.string.dialog_body_no_connection).setTitle(R.string.dialog_title_no_connection);
+			
+			// 3. Get the AlertDialog from create()
+			AlertDialog dialog = builder.create();
+			dialog.show();
+		}
 	}
 
 	@Override
@@ -183,5 +194,16 @@ public class MainActivity extends Activity {
 	private void delayedHide(int delayMillis) {
 		mHideHandler.removeCallbacks(mHideRunnable);
 		mHideHandler.postDelayed(mHideRunnable, delayMillis);
+	}
+
+	public boolean isOnline() {
+		ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+		NetworkInfo netInfo = cm.getActiveNetworkInfo();
+		if (netInfo != null && netInfo.isConnectedOrConnecting()) {
+			return true;
+		} else
+			Log.v("Control", "Internet Connection Not Present");
+
+		return false;
 	}
 }
