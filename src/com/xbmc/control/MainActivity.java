@@ -1,6 +1,10 @@
 package com.xbmc.control;
 
 import java.io.IOException;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLConnection;
 
 import com.xbmc.control.util.ControlWebViewClient;
 import com.xbmc.control.util.JsInterface;
@@ -10,6 +14,7 @@ import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.app.ProgressDialog;
 import android.media.MediaPlayer;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
@@ -41,39 +46,31 @@ import android.webkit.WebViewClient;
  * 
  * @see SystemUiHider
  */
+
+/**
+ * @author 922261
+ *
+ */
 public class MainActivity extends Activity {
 	/**
 	 * Whether or not the system UI should be auto-hidden after
 	 * {@link #AUTO_HIDE_DELAY_MILLIS} milliseconds.
 	 */
 	private static final boolean AUTO_HIDE = true;
-
+	private static final String URL_WEBAPP = "http://henifezzeni.hd.free.fr:8080/Remote/index.php";
 	/**
 	 * If {@link #AUTO_HIDE} is set, the number of milliseconds to wait after
 	 * user interaction before hiding the system UI.
 	 */
 	private static final int AUTO_HIDE_DELAY_MILLIS = 3000;
 
-	/**
-	 * If set, will toggle the system UI visibility upon interaction. Otherwise,
-	 * will show the system UI visibility upon interaction.
-	 */
-	private static final boolean TOGGLE_ON_CLICK = true;
-
-	/**
-	 * The flags to pass to {@link SystemUiHider#getInstance}.
-	 */
-	private static final int HIDER_FLAGS = SystemUiHider.FLAG_HIDE_NAVIGATION;
-
-	/**
-	 * The instance of the {@link SystemUiHider} for this activity.
-	 */
-	private SystemUiHider mSystemUiHider;
-
 	private WebView mWebView;
 
+	/* (non-Javadoc)
+	 * @see android.app.Activity#onCreate(android.os.Bundle)
+	 */
 	@Override
-	@SuppressLint("NewApi")
+	@SuppressLint({ "NewApi", "SetJavaScriptEnabled" })
 	protected void onCreate(Bundle savedInstanceState) {
 
 		final Activity activity = this;
@@ -88,16 +85,38 @@ public class MainActivity extends Activity {
 		// in Activity's onCreate() for instance
 		w.addFlags(WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN);
 		// w.requestFeature(Window.FEATURE_PROGRESS);
-		setContentView(R.layout.activity_main);
+		//setContentView(R.layout.activity_main);
+		startWebView(URL_WEBAPP);
+		setContentView(mWebView);
+		if (isOnline()) {
+			mWebView.loadUrl(URL_WEBAPP);
+		} else {
+			AlertDialog.Builder builder = new AlertDialog.Builder(this);
 
+			// 2. Chain together various setter methods to set the dialog
+			// characteristics
+			builder.setMessage(R.string.dialog_body_no_connection).setTitle(
+					R.string.dialog_title_no_connection);
+
+			// 3. Get the AlertDialog from create()
+			AlertDialog dialog = builder.create();
+			dialog.show();
+		}
+	}
+
+	/**
+	 * @param url
+	 */
+	private void startWebView(String url) {
+		
 		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
 			if (0 != (getApplicationInfo().flags &= ApplicationInfo.FLAG_DEBUGGABLE)) {
 				WebView.setWebContentsDebuggingEnabled(true);
 			}
 		}
 
-		WebView webview = new WebView(this);
-		WebSettings webSettings = webview.getSettings();
+		mWebView = new WebView(this);
+		WebSettings webSettings = mWebView.getSettings();
 		webSettings.setJavaScriptEnabled(true);
 		webSettings.setAllowContentAccess(true);
 		webSettings.setJavaScriptCanOpenWindowsAutomatically(false);
@@ -105,96 +124,73 @@ public class MainActivity extends Activity {
 		webSettings.setDomStorageEnabled(true);
 		webSettings.setLoadWithOverviewMode(true);
 		webSettings.setUseWideViewPort(true);
-		webSettings.setCacheMode(WebSettings.LOAD_NO_CACHE);
+		//webSettings.setCacheMode(WebSettings.LOAD_NO_CACHE);
 		// webSettings.setSupportMultipleWindows(true);
-		webview.setHorizontalScrollBarEnabled(false);
-		webview.setScrollBarStyle(WebView.SCROLLBARS_OUTSIDE_OVERLAY);
+		mWebView.setHorizontalScrollBarEnabled(false);
+		mWebView.setScrollBarStyle(WebView.SCROLLBARS_OUTSIDE_OVERLAY);
 
-		webview.addJavascriptInterface(new JsInterface(), "android");
+		mWebView.addJavascriptInterface(new JsInterface(), "android");
 
 		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
 			webSettings.setAllowUniversalAccessFromFileURLs(true);
 			webSettings.setAllowFileAccessFromFileURLs(true);
 		}
 
-		webview.setWebChromeClient(new WebChromeClient() {
-			public void onConsoleMessage(String message, int lineNumber,
-					String sourceID) {
-				Log.d("MyApplication", message + " -- From line " + lineNumber
-						+ " of " + sourceID);
-			}
-
-			public void onProgressChanged(WebView view, int progress) {
-				activity.setTitle("Loading...");
-				// Activities and WebViews measure progress with different
-				// scales.
-				// The progress meter will automatically disappear when we reach
-				// 100%
-				activity.setProgress(progress * 1000);
-				if (progress == 100)
-					activity.setTitle(R.string.app_name);
-			}
-		});
-
-		webview.setWebViewClient(new ControlWebViewClient(this));
-
-		setContentView(webview);
-		if (isOnline())
-			webview.loadUrl("http://henifezzeni.hd.free.fr:8080/Remote/index.php");
-		else
-		{
-			AlertDialog.Builder builder = new AlertDialog.Builder(this);
-
-			// 2. Chain together various setter methods to set the dialog characteristics
-			builder.setMessage(R.string.dialog_body_no_connection).setTitle(R.string.dialog_title_no_connection);
-			
-			// 3. Get the AlertDialog from create()
-			AlertDialog dialog = builder.create();
-			dialog.show();
-		}
+		mWebView.setWebViewClient(new ControlWebViewClient(this));
 	}
+
+//	@Override
+//	protected void onPostCreate(Bundle savedInstanceState) {
+//		super.onPostCreate(savedInstanceState);
+//
+//		// Trigger the initial hide() shortly after the activity has been
+//		// created, to briefly hint to the user that UI controls
+//		// are available.
+//		delayedHide(100);
+//	}
+//
+//	/**
+//	 * Touch listener to use for in-layout UI controls to delay hiding the
+//	 * system UI. This is to prevent the jarring behavior of controls going away
+//	 * while interacting with activity UI.
+//	 */
+//	View.OnTouchListener mDelayHideTouchListener = new View.OnTouchListener() {
+//		@Override
+//		public boolean onTouch(View view, MotionEvent motionEvent) {
+//			if (AUTO_HIDE) {
+//				delayedHide(AUTO_HIDE_DELAY_MILLIS);
+//			}
+//			return false;
+//		}
+//	};
+//
+//	Handler mHideHandler = new Handler();
+//	Runnable mHideRunnable = new Runnable() {
+//		@Override
+//		public void run() {
+//			// mSystemUiHider.hide();
+//		}
+//	};
 
 	@Override
-	protected void onPostCreate(Bundle savedInstanceState) {
-		super.onPostCreate(savedInstanceState);
-
-		// Trigger the initial hide() shortly after the activity has been
-		// created, to briefly hint to the user that UI controls
-		// are available.
-		delayedHide(100);
+	// Detect when the back button is pressed
+	public void onBackPressed() {
+		if (mWebView.canGoBack()) {
+			mWebView.goBack();
+		} else {
+			// Let the system handle the back button
+			super.onBackPressed();
+		}
 	}
 
-	/**
-	 * Touch listener to use for in-layout UI controls to delay hiding the
-	 * system UI. This is to prevent the jarring behavior of controls going away
-	 * while interacting with activity UI.
-	 */
-	View.OnTouchListener mDelayHideTouchListener = new View.OnTouchListener() {
-		@Override
-		public boolean onTouch(View view, MotionEvent motionEvent) {
-			if (AUTO_HIDE) {
-				delayedHide(AUTO_HIDE_DELAY_MILLIS);
-			}
-			return false;
-		}
-	};
-
-	Handler mHideHandler = new Handler();
-	Runnable mHideRunnable = new Runnable() {
-		@Override
-		public void run() {
-			// mSystemUiHider.hide();
-		}
-	};
-
-	/**
-	 * Schedules a call to hide() in [delay] milliseconds, canceling any
-	 * previously scheduled calls.
-	 */
-	private void delayedHide(int delayMillis) {
-		mHideHandler.removeCallbacks(mHideRunnable);
-		mHideHandler.postDelayed(mHideRunnable, delayMillis);
-	}
+//	/**
+//	 * Schedules a call to hide() in [delay] milliseconds, canceling any
+//	 * previously scheduled calls.
+//	 */
+//	private void delayedHide(int delayMillis) {
+//		mHideHandler.removeCallbacks(mHideRunnable);
+//		mHideHandler.postDelayed(mHideRunnable, delayMillis);
+//	}
 
 	public boolean isOnline() {
 		ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
