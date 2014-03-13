@@ -67,28 +67,28 @@ public final class ControlWebViewClient extends WebViewClient {
 	 */
 	public void onLoadResource(WebView view, String url) {
 		
-		if (progressDialog == null && url.endsWith(".php")||url.endsWith(".html")) {
-			// in standard case YourActivity.this
-			progressDialog = new ProgressDialog(context);
-			progressDialog.setMessage("Loading...");
-			progressDialog.show();
-		}
+//		if (progressDialog == null && url.endsWith(".php")||url.endsWith(".html")) {
+//			// in standard case YourActivity.this
+//			progressDialog = new ProgressDialog(context);
+//			progressDialog.setMessage("Loading...");
+//			progressDialog.show();
+//		}
 	}
 
 	/* (non-Javadoc)
 	 * @see android.webkit.WebViewClient#onPageFinished(android.webkit.WebView, java.lang.String)
 	 */
 	public void onPageFinished(WebView view, String url) {
-		try {
-			if (progressDialog.isShowing()) {
-				progressDialog.dismiss();
-				progressDialog = null;
-			}
-		} catch (Exception exception) {
-			progressDialog.dismiss();
-			progressDialog = null;
-			exception.printStackTrace();
-		}
+//		try {
+//			if (progressDialog.isShowing()) {
+//				progressDialog.dismiss();
+//				progressDialog = null;
+//			}
+//		} catch (Exception exception) {
+//			progressDialog.dismiss();
+//			progressDialog = null;
+//			exception.printStackTrace();
+//		}
 	}
 
 }
