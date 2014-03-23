@@ -52,18 +52,7 @@ import android.webkit.WebViewClient;
  *
  */
 public class MainActivity extends Activity {
-	/**
-	 * Whether or not the system UI should be auto-hidden after
-	 * {@link #AUTO_HIDE_DELAY_MILLIS} milliseconds.
-	 */
-	private static final boolean AUTO_HIDE = true;
 	private static final String URL_WEBAPP = "http://henifezzeni.hd.free.fr:8080/Remote/index.php";
-	/**
-	 * If {@link #AUTO_HIDE} is set, the number of milliseconds to wait after
-	 * user interaction before hiding the system UI.
-	 */
-	private static final int AUTO_HIDE_DELAY_MILLIS = 3000;
-
 	private WebView mWebView;
 
 	/* (non-Javadoc)
